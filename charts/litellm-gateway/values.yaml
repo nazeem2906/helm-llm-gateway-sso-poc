@@ -1,0 +1,76 @@
+image:
+  repository: ghcr.io/berriai/litellm
+  tag: main-latest
+  pullPolicy: IfNotPresent
+
+replicaCount: 1
+
+service:
+  type: NodePort
+  port: 4000
+  nodePort: 30400
+
+public:
+  baseUrl: "http://llm-gateway.example.com"
+  ssoShortcutUrl: "http://llm-gateway-sso.example.com"
+
+admin:
+  masterKey: "sk-change-me-master-key"
+  uiUsername: "admin"
+  uiPassword: "CHANGE_ME_ADMIN_PASSWORD"
+
+backend:
+  apiBase: "https://models.example.com/api"
+  apiKey: "CHANGE_ME_BACKEND_API_KEY"
+  sslVerify: false
+
+models:
+  - name: "demo-model"
+    providerModel: "openai/demo-model"
+
+sso:
+  enabled: true
+  autoRedirect: false
+  clientId: "litellm"
+  clientSecret: "CHANGE_ME_LITELLM_OIDC_CLIENT_SECRET"
+  authorizationEndpoint: "http://keycloak.example.com/realms/llm-gateway/protocol/openid-connect/auth"
+  tokenEndpoint: "http://keycloak.example.com/realms/llm-gateway/protocol/openid-connect/token"
+  userinfoEndpoint: "http://keycloak.example.com/realms/llm-gateway/protocol/openid-connect/userinfo"
+  callbackPath: "/sso/callback"
+  groupClaim: "groups"
+  defaultRole: "internal_user"
+  adminGroupDn: "CN=LLM-GATEWAY-ADMINS,OU=Groups,DC=example,DC=local"
+
+postgresql:
+  image: postgres:16-alpine
+  password: "CHANGE_ME_POSTGRES_PASSWORD"
+  database: "litellm"
+  username: "litellm"
+  persistence:
+    enabled: true
+    size: 10Gi
+
+ssoRedirect:
+  enabled: true
+  image: nginx:1.27-alpine
+  service:
+    type: NodePort
+    port: 8080
+    nodePort: 30481
+
+metrics:
+  enabled: true
+
+resources:
+  requests:
+    cpu: 250m
+    memory: 512Mi
+  limits:
+    cpu: "2"
+    memory: 2Gi
+
+
+grafanaDashboard:
+  enabled: true
+  labels:
+    grafana_dashboard: "1"

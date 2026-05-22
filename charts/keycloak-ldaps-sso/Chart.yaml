@@ -1,0 +1,6 @@
+apiVersion: v2
+name: keycloak-ldaps-sso
+description: Anonymized Keycloak with LDAPS federation for LiteLLM SSO
+type: application
+version: 0.1.0
+appVersion: "25.0.6"

@@ -1,0 +1,113 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "litellm-gateway.fullname" . }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "litellm-gateway.fullname" . }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ include "litellm-gateway.fullname" . }}
+    spec:
+      containers:
+        - name: litellm
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args:
+            - --config
+            - /app/config.yaml
+            - --port
+            - "4000"
+            - --host
+            - "0.0.0.0"
+          ports:
+            - name: http
+              containerPort: 4000
+          env:
+            - name: LITELLM_MASTER_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "litellm-gateway.fullname" . }}-secret
+                  key: LITELLM_MASTER_KEY
+            - name: OPENAI_COMPATIBLE_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "litellm-gateway.fullname" . }}-secret
+                  key: OPENAI_COMPATIBLE_API_KEY
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "litellm-gateway.fullname" . }}-secret
+                  key: DATABASE_URL
+            - name: STORE_MODEL_IN_DB
+              value: "True"
+            - name: LITELLM_LOG
+              value: "INFO"
+            - name: UI_USERNAME
+              value: {{ .Values.admin.uiUsername | quote }}
+            - name: UI_PASSWORD
+              value: {{ .Values.admin.uiPassword | quote }}
+            - name: PROXY_BASE_URL
+              value: {{ .Values.public.baseUrl | quote }}
+            - name: LITELLM_CONTROL_PLANE_URL
+              value: {{ .Values.public.baseUrl | quote }}
+            - name: CONTROL_PLANE_URL
+              value: {{ .Values.public.baseUrl | quote }}
+            - name: LITELLM_UI_URL
+              value: {{ .Values.public.baseUrl | quote }}
+            {{- if .Values.sso.enabled }}
+            - name: GENERIC_CLIENT_ID
+              value: {{ .Values.sso.clientId | quote }}
+            - name: GENERIC_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "litellm-gateway.fullname" . }}-secret
+                  key: GENERIC_CLIENT_SECRET
+            - name: GENERIC_AUTHORIZATION_ENDPOINT
+              value: {{ .Values.sso.authorizationEndpoint | quote }}
+            - name: GENERIC_TOKEN_ENDPOINT
+              value: {{ .Values.sso.tokenEndpoint | quote }}
+            - name: GENERIC_USERINFO_ENDPOINT
+              value: {{ .Values.sso.userinfoEndpoint | quote }}
+            - name: GENERIC_USER_EMAIL_ATTRIBUTE
+              value: "email"
+            - name: GENERIC_USER_ID_ATTRIBUTE
+              value: "email"
+            - name: GENERIC_USER_DISPLAY_NAME_ATTRIBUTE
+              value: "name"
+            - name: GENERIC_ROLE_MAPPINGS_GROUP_CLAIM
+              value: {{ .Values.sso.groupClaim | quote }}
+            - name: GENERIC_ROLE_MAPPINGS_DEFAULT_ROLE
+              value: {{ .Values.sso.defaultRole | quote }}
+            - name: GENERIC_ROLE_MAPPINGS_ROLES
+              value: {{ printf "{"proxy_admin":["%s"]}" .Values.sso.adminGroupDn | quote }}
+            - name: AUTO_REDIRECT_UI_LOGIN_TO_SSO
+              value: {{ .Values.sso.autoRedirect | quote }}
+            {{- end }}
+          volumeMounts:
+            - name: config
+              mountPath: /app/config.yaml
+              subPath: config.yaml
+          readinessProbe:
+            httpGet:
+              path: /health/liveliness
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            failureThreshold: 18
+          livenessProbe:
+            httpGet:
+              path: /health/liveliness
+              port: http
+            initialDelaySeconds: 90
+            periodSeconds: 20
+            failureThreshold: 6
+          resources:
+{{ toYaml .Values.resources | indent 12 }}
+      volumes:
+        - name: config
+          configMap:
+            name: {{ include "litellm-gateway.fullname" . }}-config

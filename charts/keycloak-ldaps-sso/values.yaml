@@ -1,0 +1,56 @@
+image:
+  repository: quay.io/keycloak/keycloak
+  tag: "25.0.6"
+  pullPolicy: IfNotPresent
+
+replicaCount: 1
+
+service:
+  type: NodePort
+  port: 8080
+  nodePort: 30480
+
+publicUrl: "http://keycloak.example.com"
+
+keycloak:
+  adminUser: "admin"
+  adminPassword: "CHANGE_ME_KEYCLOAK_ADMIN_PASSWORD"
+  realm: "llm-gateway"
+
+oidcClient:
+  clientId: "litellm"
+  clientSecret: "CHANGE_ME_LITELLM_OIDC_CLIENT_SECRET"
+  redirectUris:
+    - "http://llm-gateway.example.com/sso/callback"
+  webOrigins:
+    - "http://llm-gateway.example.com"
+
+ldap:
+  enabled: true
+  providerName: "corp-ldaps"
+  url: "ldaps://ldap.example.local:636"
+  bindDn: "svc-ldap@example.local"
+  bindPassword: "CHANGE_ME_LDAP_BIND_PASSWORD"
+  usersDn: "OU=Users,DC=example,DC=local"
+  usernameAttribute: "mail"
+  rdnAttribute: "cn"
+  uuidAttribute: "objectGUID"
+  userObjectClasses: "person, organizationalPerson, user"
+  customUserSearchFilter: "(&(objectClass=user)(mail=*))"
+  adminGroupDn: "CN=LLM-GATEWAY-ADMINS,OU=Groups,DC=example,DC=local"
+
+ldapCa:
+  enabled: false
+  caCrt: ""
+
+persistence:
+  enabled: true
+  size: 2Gi
+
+resources:
+  requests:
+    cpu: 250m
+    memory: 512Mi
+  limits:
+    cpu: "1"
+    memory: 1Gi

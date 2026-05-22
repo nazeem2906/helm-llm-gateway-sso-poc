@@ -1,0 +1,14 @@
+{{- if .Values.metrics.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "litellm-gateway.fullname" . }}-prometheus-scrape-example
+data:
+  litellm.yml: |
+    scrape_configs:
+      - job_name: litellm-gateway
+        metrics_path: /metrics
+        static_configs:
+          - targets:
+              - {{ include "litellm-gateway.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local:{{ .Values.service.port }}
+{{- end }}

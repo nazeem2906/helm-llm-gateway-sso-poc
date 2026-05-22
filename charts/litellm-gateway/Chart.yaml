@@ -1,0 +1,6 @@
+apiVersion: v2
+name: litellm-gateway
+description: Anonymized LiteLLM Gateway with Keycloak SSO and PostgreSQL
+type: application
+version: 0.1.0
+appVersion: "latest"

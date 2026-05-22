@@ -1,0 +1,19 @@
+# Demo values. Do not use as-is in production.
+
+keycloak:
+  publicUrl: "http://keycloak.example.com"
+
+litellm:
+  publicUrl: "http://llm-gateway.example.com"
+  ssoShortcutUrl: "http://llm-gateway-sso.example.com"
+
+ldap:
+  url: "ldaps://ldap.example.local:636"
+  usersDn: "OU=Users,DC=example,DC=local"
+  bindDn: "svc-ldap@example.local"
+  adminGroupDn: "CN=LLM-GATEWAY-ADMINS,OU=Groups,DC=example,DC=local"
+
+backend:
+  apiBase: "https://models.example.com/api"
+  models:
+    - "demo-model"

@@ -1,0 +1,41 @@
+LiteLLM Gateway deployed.
+
+Public URL:
+  {{ .Values.public.baseUrl }}
+
+API base URL:
+  {{ .Values.public.baseUrl }}/v1
+
+UI:
+  {{ .Values.public.baseUrl }}/ui/
+
+Health:
+  {{ .Values.public.baseUrl }}/health/liveliness
+
+Metrics:
+  {{ .Values.public.baseUrl }}/metrics
+
+Kubernetes service:
+  {{ include "litellm-gateway.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local:{{ .Values.service.port }}
+
+{{- if .Values.sso.enabled }}
+Keycloak SSO:
+  enabled: true
+  auth endpoint: {{ .Values.sso.authorizationEndpoint }}
+  callback expected in Keycloak:
+    {{ .Values.public.baseUrl }}{{ .Values.sso.callbackPath }}
+
+SSO shortcut:
+  {{ .Values.public.ssoShortcutUrl }}
+{{- end }}
+
+Important values to edit:
+  admin.masterKey
+  admin.uiPassword
+  backend.apiKey
+  backend.apiBase
+  sso.clientSecret
+  postgresql.password
+
+Prometheus scrape example:
+  kubectl -n {{ .Release.Namespace }} get cm {{ include "litellm-gateway.fullname" . }}-prometheus-scrape-example -o jsonpath='{.data.litellm\.yml}'

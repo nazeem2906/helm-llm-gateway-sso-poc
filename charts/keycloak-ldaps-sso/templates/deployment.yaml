@@ -1,0 +1,88 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "keycloak-ldaps-sso.fullname" . }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "keycloak-ldaps-sso.fullname" . }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ include "keycloak-ldaps-sso.fullname" . }}
+    spec:
+      containers:
+        - name: keycloak
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args:
+            - start-dev
+            - --import-realm
+            - --http-enabled=true
+            - --hostname-strict=false
+            - --proxy-headers=xforwarded
+          ports:
+            - name: http
+              containerPort: 8080
+          env:
+            - name: KEYCLOAK_ADMIN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "keycloak-ldaps-sso.fullname" . }}-secret
+                  key: KEYCLOAK_ADMIN
+            - name: KEYCLOAK_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "keycloak-ldaps-sso.fullname" . }}-secret
+                  key: KEYCLOAK_ADMIN_PASSWORD
+            - name: KC_HEALTH_ENABLED
+              value: "true"
+            - name: KC_METRICS_ENABLED
+              value: "true"
+            {{- if .Values.ldapCa.enabled }}
+            - name: KC_TRUSTSTORE_PATHS
+              value: /etc/x509/ldap-ca/ca.crt
+            {{- end }}
+          volumeMounts:
+            - name: realm
+              mountPath: /opt/keycloak/data/import
+            {{- if .Values.persistence.enabled }}
+            - name: data
+              mountPath: /opt/keycloak/data
+            {{- end }}
+            {{- if .Values.ldapCa.enabled }}
+            - name: ldap-ca
+              mountPath: /etc/x509/ldap-ca
+              readOnly: true
+            {{- end }}
+          readinessProbe:
+            httpGet:
+              path: /realms/{{ .Values.keycloak.realm }}
+              port: http
+            initialDelaySeconds: 40
+            periodSeconds: 10
+            failureThreshold: 12
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 90
+            periodSeconds: 20
+            failureThreshold: 6
+          resources:
+{{ toYaml .Values.resources | indent 12 }}
+      volumes:
+        - name: realm
+          configMap:
+            name: {{ include "keycloak-ldaps-sso.fullname" . }}-realm
+        {{- if .Values.persistence.enabled }}
+        - name: data
+          persistentVolumeClaim:
+            claimName: {{ include "keycloak-ldaps-sso.fullname" . }}-data
+        {{- end }}
+        {{- if .Values.ldapCa.enabled }}
+        - name: ldap-ca
+          secret:
+            secretName: {{ include "keycloak-ldaps-sso.fullname" . }}-ldap-ca
+        {{- end }}

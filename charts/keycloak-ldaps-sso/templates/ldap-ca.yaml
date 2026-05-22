@@ -1,0 +1,10 @@
+{{- if .Values.ldapCa.enabled }}
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ include "keycloak-ldaps-sso.fullname" . }}-ldap-ca
+type: Opaque
+stringData:
+  ca.crt: |
+{{ .Values.ldapCa.caCrt | indent 4 }}
+{{- end }}

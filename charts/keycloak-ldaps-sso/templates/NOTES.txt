@@ -1,0 +1,16 @@
+Keycloak LDAPS SSO deployed.
+
+URL:
+  {{ .Values.publicUrl }}
+
+Realm:
+  {{ .Values.keycloak.realm }}
+
+OIDC client:
+  {{ .Values.oidcClient.clientId }}
+
+Service:
+  {{ include "keycloak-ldaps-sso.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local:{{ .Values.service.port }}
+
+Check:
+  kubectl -n {{ .Release.Namespace }} get pod,svc | grep {{ include "keycloak-ldaps-sso.fullname" . }}

@@ -1,0 +1,81 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "keycloak-ldaps-sso.fullname" . }}-realm
+data:
+  realm.json: |
+    {
+      "realm": "{{ .Values.keycloak.realm }}",
+      "enabled": true,
+      "displayName": "LLM Gateway",
+      "clients": [
+        {
+          "clientId": "{{ .Values.oidcClient.clientId }}",
+          "name": "LiteLLM Gateway",
+          "enabled": true,
+          "clientAuthenticatorType": "client-secret",
+          "secret": "{{ .Values.oidcClient.clientSecret }}",
+          "redirectUris": [{{- range $i, $uri := .Values.oidcClient.redirectUris }}{{ if $i }},{{ end }}"{{ $uri }}"{{- end }}],
+          "webOrigins": [{{- range $i, $origin := .Values.oidcClient.webOrigins }}{{ if $i }},{{ end }}"{{ $origin }}"{{- end }}],
+          "protocol": "openid-connect",
+          "publicClient": false,
+          "standardFlowEnabled": true,
+          "directAccessGrantsEnabled": false,
+          "serviceAccountsEnabled": false
+        }
+      ],
+      "clientScopes": [
+        {
+          "name": "groups",
+          "protocol": "openid-connect",
+          "protocolMappers": [
+            {
+              "name": "groups",
+              "protocol": "openid-connect",
+              "protocolMapper": "oidc-group-membership-mapper",
+              "consentRequired": false,
+              "config": {
+                "full.path": "false",
+                "id.token.claim": "true",
+                "access.token.claim": "true",
+                "userinfo.token.claim": "true",
+                "claim.name": "groups"
+              }
+            }
+          ]
+        }
+      ],
+      "defaultClientScopes": ["web-origins", "acr", "profile", "roles", "email", "groups"],
+      "components": {
+        "org.keycloak.storage.UserStorageProvider": [
+          {
+            "name": "{{ .Values.ldap.providerName }}",
+            "providerId": "ldap",
+            "subComponents": {},
+            "config": {
+              "enabled": ["{{ .Values.ldap.enabled }}"],
+              "vendor": ["ad"],
+              "connectionUrl": ["{{ .Values.ldap.url }}"],
+              "usersDn": ["{{ .Values.ldap.usersDn }}"],
+              "bindDn": ["{{ .Values.ldap.bindDn }}"],
+              "bindCredential": ["{{ .Values.ldap.bindPassword }}"],
+              "authType": ["simple"],
+              "searchScope": ["2"],
+              "usernameLDAPAttribute": ["{{ .Values.ldap.usernameAttribute }}"],
+              "rdnLDAPAttribute": ["{{ .Values.ldap.rdnAttribute }}"],
+              "uuidLDAPAttribute": ["{{ .Values.ldap.uuidAttribute }}"],
+              "userObjectClasses": ["{{ .Values.ldap.userObjectClasses }}"],
+              "customUserSearchFilter": ["{{ .Values.ldap.customUserSearchFilter }}"],
+              "importEnabled": ["true"],
+              "syncRegistrations": ["false"],
+              "editMode": ["READ_ONLY"],
+              "trustEmail": ["true"],
+              "useTruststoreSpi": ["ldapsOnly"],
+              "pagination": ["true"],
+              "connectionPooling": ["true"],
+              "cachePolicy": ["DEFAULT"]
+            }
+          }
+        ]
+      }
+    }
